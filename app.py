@@ -102,7 +102,7 @@ def logout():
     db.session.commit()
     return jsonify(msg='successfully logged out (jwt revoked)')
 
-#Users
+# users
 @app.route('/api/user/<username>')
 def get_user(username):
     user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
@@ -117,10 +117,26 @@ def get_users():
     return user_list
 
 # Habits
-# These routes should be protected; implement Flask-JWT-Extended here
-@app.route('/api/habits') # Needs GET, POST for read, create
+@jwt_required()
+@app.route('/api/habits')
 def get_habits():
-    pass
+    habits = db.session.execute(db.select(Habit).where(Habit.user_id == '1')).scalars()
+    habit_list = []
+    for habit in habits:
+        habit_list.append({'id': habit.id, 'name': habit.name, 'description': habit.description, 'frequency': habit.frequency})
+    return jsonify(habit_list), 200
+
+@jwt_required()
+@app.route('/api/habits', methods=['POST'])
+def create_habit():
+    habit = Habit(name=request.json.get('name', None),
+                description=request.json.get('description', None),
+                frequency=request.json.get('frequency', None),
+                user_id='1')
+    db.session.add(habit)
+    db.session.commit()
+    return jsonify(msg='habit created'), 201
+    
 
 @app.route('/api/habits/<id>') # Needs PUT, DELETE for edit, delete
 def edit_habit():
