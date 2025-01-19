@@ -11,8 +11,8 @@ from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 from markupsafe import escape
-from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import exc
+from sqlalchemy.orm import DeclarativeBase
 
 class Base(DeclarativeBase):
     pass
@@ -82,8 +82,8 @@ def signup():
         db.session.add(user)
         db.session.commit()
     except exc.IntegrityError:
-        return jsonify(msg='username is already taken')
-    return jsonify(username=username), 201
+        return ({'msg': 'username is already taken'})
+    return jsonify(username), 201
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -91,7 +91,7 @@ def login():
     password = request.json.get('password', None)
 
     if password != get_user(username)['password']:
-        return jsonify(msg='invalid credentials'), 401
+        return jsonify({'msg': 'invalid credentials'}), 401
     
     access_token = create_access_token(identity=username)
 
@@ -104,13 +104,13 @@ def logout():
     now = datetime.now(timezone.utc)
     db.session.add(TokenBlocklist(jti=jti, created_at=now))
     db.session.commit()
-    return jsonify(msg='successfully logged out (jwt revoked)')
+    return ({'msg': 'successfully logged out (jwt revoked)'})
 
-# users
-@app.route('/api/user/<username>')
+#Users
+@app.route('/api/users/<username>')
 def get_user(username):
     user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
-    return jsonify(id=user.id, username=user.username, password=user.password)
+    return {'id': user.id, 'username': user.username}
 
 @app.route('/api/users')
 def get_users():
@@ -118,13 +118,14 @@ def get_users():
     user_list = []
     for user in users:
         user_list.append({'id': user.id, 'username': user.username, 'password' : user.password})
-    return jsonify(user_list=user_list)
+    return user_list
 
 # Habits
-@app.route('/api/habits')
+# These routes should be protected; implement Flask-JWT-Extended here
+@app.route('/api/habits/<user_id>') # Needs GET, POST for read, create
 @jwt_required()
-def get_habits():
-    habits = db.session.execute(db.select(Habit).where(Habit.user_id == '1')).scalars()
+def get_habits(user_id):
+    habits = db.session.execute(db.select(Habit).where(Habit.user_id == user_id)).scalars()
     habit_list = []
     for habit in habits:
         habit_list.append({'id': habit.id, 'name': habit.name, 'description': habit.description, 'frequency': habit.frequency})
@@ -140,7 +141,6 @@ def create_habit():
     db.session.add(habit)
     db.session.commit()
     return jsonify(msg='habit created'), 201
-    
 
 @app.route('/api/habits/<id>') # Needs PUT, DELETE for edit, delete
 def edit_habit():
