@@ -12,6 +12,7 @@ from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 from markupsafe import escape
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import exc
 
 class Base(DeclarativeBase):
     pass
@@ -77,9 +78,12 @@ def signup():
     username = request.json.get('username', None)
     password = request.json.get('password', None)
     user = User(username=username, password=password)
-    db.session.add(user)
-    db.session.commit()
-    return jsonify(username), 201
+    try:
+        db.session.add(user)
+        db.session.commit()
+    except exc.IntegrityError:
+        return jsonify(msg='username is already taken')
+    return jsonify(username=username), 201
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -87,7 +91,7 @@ def login():
     password = request.json.get('password', None)
 
     if password != get_user(username)['password']:
-        return jsonify({'msg': 'invalid credentials'}), 401
+        return jsonify(msg='invalid credentials'), 401
     
     access_token = create_access_token(identity=username)
 
@@ -106,7 +110,7 @@ def logout():
 @app.route('/api/user/<username>')
 def get_user(username):
     user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
-    return {'id': user.id, 'username': user.username, 'password': user.password}
+    return jsonify(id=user.id, username=user.username, password=user.password)
 
 @app.route('/api/users')
 def get_users():
@@ -114,25 +118,25 @@ def get_users():
     user_list = []
     for user in users:
         user_list.append({'id': user.id, 'username': user.username, 'password' : user.password})
-    return user_list
+    return jsonify(user_list=user_list)
 
 # Habits
-@jwt_required()
 @app.route('/api/habits')
+@jwt_required()
 def get_habits():
     habits = db.session.execute(db.select(Habit).where(Habit.user_id == '1')).scalars()
     habit_list = []
     for habit in habits:
         habit_list.append({'id': habit.id, 'name': habit.name, 'description': habit.description, 'frequency': habit.frequency})
-    return jsonify(habit_list), 200
+    return jsonify(habit_list=habit_list), 200
 
-@jwt_required()
 @app.route('/api/habits', methods=['POST'])
+@jwt_required()
 def create_habit():
     habit = Habit(name=request.json.get('name', None),
                 description=request.json.get('description', None),
                 frequency=request.json.get('frequency', None),
-                user_id='1')
+                user_id=request.json.get('user_id', None))
     db.session.add(habit)
     db.session.commit()
     return jsonify(msg='habit created'), 201
