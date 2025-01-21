@@ -62,15 +62,17 @@ def check_if_token_revoked(jwt_header, jwt_payload: dict) -> bool:
     token = db.session.query(TokenBlocklist.id).filter_by(jti=jti).scalar()
     return token is not None
 
+# routes are GETs by default, so you only need to pass a methods param in the
+# decorator if the route uses a verb other than that, e.g. @app.route(' /route', methods=['POST'])
 @app.route('/')
 def index():
     return 'Homepage for Habit Tracker'
 
-@app.route('/protected', methods=['GET'])
+@app.route('/protected')
 @jwt_required()
 def protected():
     current_user = get_jwt_identity()
-    return jsonify(logged_in_as=current_user), 200
+    return jsonify(msg='got protected route', data={'logged_in_as': current_user}), 200
 
 # user auth
 @app.route('/api/auth/signup', methods=['POST'])
@@ -83,19 +85,19 @@ def signup():
         db.session.commit()
     except exc.IntegrityError:
         return ({'msg': 'username is already taken'})
-    return jsonify(username), 201
+    return jsonify(msg='signup successful', data={'username': user.username, 'user_id': user.id}), 201
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     username = request.json.get('username', None)
     password = request.json.get('password', None)
 
-    if password != get_user(username)['password']:
+    if password != get_user(username).json['data']['password']:
         return jsonify({'msg': 'invalid credentials'}), 401
     
     access_token = create_access_token(identity=username)
 
-    return jsonify(access_token=access_token), 200
+    return jsonify(msg='successfully logged in', data={'access_token': access_token}), 200
 
 @app.route('/api/auth/logout', methods=['DELETE'])
 @jwt_required()
@@ -104,14 +106,19 @@ def logout():
     now = datetime.now(timezone.utc)
     db.session.add(TokenBlocklist(jti=jti, created_at=now))
     db.session.commit()
-    return ({'msg': 'successfully logged out (jwt revoked)'})
 
-#Users
-@app.route('/api/users/<username>')
-def get_user(username):
-    user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
-    return {'id': user.id, 'username': user.username}
+    return jsonify(msg='successfully logged out (jwt revoked)', data={})
 
+# users
+@app.route('/api/users/<user_id>') # TODO: don't need this route, but it could be useful in the future for some feature
+def get_user(user_id):
+    user = db.session.execute(db.select(User).where(User.id == user_id)).scalars().first()
+    try:
+        return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username, 'password':user.password})
+    except AttributeError:
+        return jsonify(msg='no user with that id found', data={})
+    
+# TODO: i don't actually need this route, but perhaps it could be used in the future for something like an admin role
 @app.route('/api/users')
 def get_users():
     users = db.session.execute(db.select(User).order_by(User.username)).scalars()
@@ -121,8 +128,7 @@ def get_users():
     return user_list
 
 # Habits
-# These routes should be protected; implement Flask-JWT-Extended here
-@app.route('/api/habits/<user_id>') # Needs GET, POST for read, create
+@app.route('/api/habits/<user_id>')
 @jwt_required()
 def get_habits(user_id):
     habits = db.session.execute(db.select(Habit).where(Habit.user_id == user_id)).scalars()
@@ -131,7 +137,7 @@ def get_habits(user_id):
         habit_list.append({'id': habit.id, 'name': habit.name, 'description': habit.description, 'frequency': habit.frequency})
     return jsonify(habit_list=habit_list), 200
 
-@app.route('/api/habits', methods=['POST'])
+@app.route('/api/habits', methods=['POST']) # TODO: Consider using '/api/habits/<user_id> for this route
 @jwt_required()
 def create_habit():
     habit = Habit(name=request.json.get('name', None),
@@ -140,7 +146,10 @@ def create_habit():
                 user_id=request.json.get('user_id', None))
     db.session.add(habit)
     db.session.commit()
-    return jsonify(msg='habit created'), 201
+    return jsonify(msg='habit created', data={'name': habit.name,
+                                              'description': habit.description,
+                                              'frequency': habit.frequency,
+                                              'user_id': habit.user_id}), 201
 
 @app.route('/api/habits/<id>') # Needs PUT, DELETE for edit, delete
 def edit_habit():
