@@ -84,7 +84,7 @@ def signup():
         db.session.add(user)
         db.session.commit()
     except exc.IntegrityError:
-        return ({'msg': 'username is already taken'})
+        return jsonify(msg='username is already taken', data={})
     return jsonify(msg='signup successful', data={'username': user.username, 'user_id': user.id}), 201
 
 @app.route('/api/auth/login', methods=['POST'])
@@ -94,7 +94,7 @@ def login():
     print(get_user(username).json)
 
     if password != get_user(username).json['data']['password']:
-        return jsonify({'msg': 'invalid credentials'}), 401
+        return jsonify(msg='invalid credentials', data={}), 401
     
     access_token = create_access_token(identity=username)
 
