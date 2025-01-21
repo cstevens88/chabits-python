@@ -155,7 +155,7 @@ def create_habit():
 
 # https://docs.sqlalchemy.org/en/20/tutorial/orm_data_manipulation.html
 # use the "unit of work" pattern mentioned in the link above
-@app.route('/api/habits/<habit_id>', methods=['POST']) # Needs POST, DELETE for edit, delete
+@app.route('/api/habits/<habit_id>', methods=['POST'])
 @jwt_required()
 def update_habit(habit_id):
     habit = db.session.execute(db.select(Habit).where(Habit.id == habit_id)).scalars().first()
@@ -170,6 +170,16 @@ def update_habit(habit_id):
                                      'description': habit.description,
                                      'frequency': habit.frequency,
                                      'id': habit.id})
-    
-def delete_habit():
-    pass
+
+@app.route('/api/habits/<habit_id>', methods=['DELETE'])
+@jwt_required()
+def delete_habit(habit_id):
+    habit = db.session.execute(db.select(Habit).where(Habit.id == habit_id)).scalars().first()
+    db.session.delete(habit)
+    db.session.commit()
+
+    return jsonify(msg='successfully deleted habit', data={'name': habit.name,
+                                                           'description': habit.description,
+                                                           'frequency': habit.frequency,
+                                                           'user_id': habit.user_id,
+                                                           'id': habit.id})
