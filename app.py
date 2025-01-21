@@ -91,6 +91,7 @@ def signup():
 def login():
     username = request.json.get('username', None)
     password = request.json.get('password', None)
+    print(get_user(username).json)
 
     if password != get_user(username).json['data']['password']:
         return jsonify({'msg': 'invalid credentials'}), 401
@@ -110,9 +111,9 @@ def logout():
     return jsonify(msg='successfully logged out (jwt revoked)', data={})
 
 # users
-@app.route('/api/users/<user_id>') # TODO: don't need this route, but it could be useful in the future for some feature
-def get_user(user_id):
-    user = db.session.execute(db.select(User).where(User.id == user_id)).scalars().first()
+@app.route('/api/users/<username>') # TODO: don't need this route, but it could be useful in the future for some feature
+def get_user(username):
+    user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
     try:
         return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username, 'password':user.password})
     except AttributeError:
@@ -151,8 +152,22 @@ def create_habit():
                                               'frequency': habit.frequency,
                                               'user_id': habit.user_id}), 201
 
-@app.route('/api/habits/<id>') # Needs PUT, DELETE for edit, delete
-def edit_habit():
-    pass
+# https://docs.sqlalchemy.org/en/20/tutorial/orm_data_manipulation.html
+# use the "unit of work" pattern mentioned in the link above
+@app.route('/api/habits/<habit_id>', methods=['POST']) # Needs POST, DELETE for edit, delete
+@jwt_required()
+def update_habit(habit_id):
+    habit = db.session.execute(db.select(Habit).where(Habit.id == habit_id)).scalars().first()
+
+    habit.name = request.json.get('name', None)
+    habit.description = request.json.get('description', None)
+    habit.frequency = request.json.get('frequency', None)
+
+    db.session.commit()
+    
+    return jsonify(msg='successfully updated habit', data={'name': habit.name,
+                                     'description': habit.description,
+                                     'frequency': habit.frequency})
+    
 def delete_habit():
     pass
