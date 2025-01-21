@@ -84,7 +84,7 @@ def signup():
         db.session.add(user)
         db.session.commit()
     except exc.IntegrityError:
-        return jsonify(msg='username is already taken', data={})
+        return jsonify(msg='username is already taken', data={}), 200
     return jsonify(msg='signup successful', data={'username': user.username, 'user_id': user.id}), 201
 
 @app.route('/api/auth/login', methods=['POST'])
@@ -108,16 +108,16 @@ def logout():
     db.session.add(TokenBlocklist(jti=jti, created_at=now))
     db.session.commit()
 
-    return jsonify(msg='successfully logged out (jwt revoked)', data={})
+    return jsonify(msg='successfully logged out (jwt revoked)', data={}), 200
 
 # users
 @app.route('/api/users/<username>') # TODO: don't need this route, but it could be useful in the future for some feature
 def get_user(username):
     user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
     try:
-        return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username, 'password':user.password})
+        return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username, 'password':user.password}), 200
     except AttributeError:
-        return jsonify(msg='no user with that id found', data={})
+        return jsonify(msg='no user with that id found', data={}), 200
     
 # TODO: i don't actually need this route, but perhaps it could be used in the future for something like an admin role
 @app.route('/api/users')
@@ -125,7 +125,7 @@ def get_users():
     users = db.session.execute(db.select(User).order_by(User.username)).scalars()
     user_list = []
     for user in users:
-        user_list.append({'id': user.id, 'username': user.username, 'password' : user.password})
+        user_list.append({'id': user.id, 'username': user.username, 'password' : user.password}), 200
     return user_list
 
 # Habits
@@ -169,7 +169,7 @@ def update_habit(habit_id):
     return jsonify(msg='successfully updated habit', data={'name': habit.name,
                                      'description': habit.description,
                                      'frequency': habit.frequency,
-                                     'id': habit.id})
+                                     'id': habit.id}), 200
 
 @app.route('/api/habits/<habit_id>', methods=['DELETE'])
 @jwt_required()
@@ -182,4 +182,4 @@ def delete_habit(habit_id):
                                                            'description': habit.description,
                                                            'frequency': habit.frequency,
                                                            'user_id': habit.user_id,
-                                                           'id': habit.id})
+                                                           'id': habit.id}), 200
