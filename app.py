@@ -150,7 +150,8 @@ def create_habit():
     return jsonify(msg='habit created', data={'name': habit.name,
                                               'description': habit.description,
                                               'frequency': habit.frequency,
-                                              'user_id': habit.user_id}), 201
+                                              'user_id': habit.user_id,
+                                              'id': habit.id}), 201
 
 # https://docs.sqlalchemy.org/en/20/tutorial/orm_data_manipulation.html
 # use the "unit of work" pattern mentioned in the link above
@@ -167,7 +168,8 @@ def update_habit(habit_id):
     
     return jsonify(msg='successfully updated habit', data={'name': habit.name,
                                      'description': habit.description,
-                                     'frequency': habit.frequency})
+                                     'frequency': habit.frequency,
+                                     'id': habit.id})
     
 def delete_habit():
     pass
