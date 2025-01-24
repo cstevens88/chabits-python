@@ -91,7 +91,6 @@ def signup():
 def login():
     username = request.json.get('username', None)
     password = request.json.get('password', None)
-    print(get_user(username).json)
 
     if password != get_user(username).json['data']['password']:
         return jsonify(msg='invalid credentials', data={}), 401
@@ -115,9 +114,9 @@ def logout():
 def get_user(username):
     user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
     try:
-        return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username, 'password':user.password}), 200
+        return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username, 'password':user.password})
     except AttributeError:
-        return jsonify(msg='no user with that id found', data={}), 200
+        return jsonify(msg='no user with that id found', data={})
     
 # TODO: i don't actually need this route, but perhaps it could be used in the future for something like an admin role
 @app.route('/api/users')
