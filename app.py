@@ -129,7 +129,7 @@ def get_users():
     users = db.session.execute(db.select(User).order_by(User.username)).scalars()
     user_list = []
     for user in users:
-        user_list.append({'id': user.id, 'username': user.username, 'password' : user.password}), 200
+        user_list.append({'id': user.id, 'username': user.username}), 200
     return user_list
 
 # Habits
