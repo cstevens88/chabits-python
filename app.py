@@ -1,3 +1,4 @@
+import bcrypt
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -79,7 +80,8 @@ def protected():
 def signup():
     username = request.json.get('username', None)
     password = request.json.get('password', None)
-    user = User(username=username, password=password)
+    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt(14))
+    user = User(username=username, password=hashed)
     try:
         db.session.add(user)
         db.session.commit()
@@ -93,7 +95,7 @@ def login():
     password = request.json.get('password', None)
 
     try:
-        if password != get_user(username).json['data']['password']:
+        if not bcrypt.checkpw(password.encode(), get_user(username).json['data']['password'].encode()):
             return jsonify(msg='invalid credentials', data={}), 401
     except KeyError:
         return jsonify(msg='invalid credentials', data={}), 401
@@ -117,7 +119,7 @@ def logout():
 def get_user(username):
     user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
     try:
-        return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username, 'password':user.password})
+        return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username, 'password':user.password.decode()})
     except AttributeError:
         return jsonify(msg='no user with that id found', data={})
     
