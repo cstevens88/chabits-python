@@ -1,3 +1,4 @@
+bcrypt
 Flask
 flask_jwt_extended
 flask_sqlalchemy
