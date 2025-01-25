@@ -92,7 +92,10 @@ def login():
     username = request.json.get('username', None)
     password = request.json.get('password', None)
 
-    if password != get_user(username).json['data']['password']:
+    try:
+        if password != get_user(username).json['data']['password']:
+            return jsonify(msg='invalid credentials', data={}), 401
+    except KeyError:
         return jsonify(msg='invalid credentials', data={}), 401
     
     access_token = create_access_token(identity=username)
