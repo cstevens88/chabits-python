@@ -138,7 +138,7 @@ def get_habits(user_id):
     habit_list = []
     for habit in habits:
         habit_list.append({'id': habit.id, 'name': habit.name, 'description': habit.description, 'frequency': habit.frequency})
-    return jsonify(habit_list=habit_list), 200
+    return jsonify(msg="successfully got user habits", data={"habits": habit_list}), 200
 
 @app.route('/api/habits', methods=['POST']) # TODO: Consider using '/api/habits/<user_id> for this route
 @jwt_required()
