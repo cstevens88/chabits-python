@@ -89,6 +89,30 @@ def signup():
         return jsonify(msg='username is already taken', data={}), 200
     return jsonify(msg='signup successful', data={'username': user.username, 'user_id': user.id}), 201
 
+@app.route('/api/auth/reset_password', methods=['POST'])
+@jwt_required()
+def reset_password():
+    username = request.json.get('username', None)
+    password = request.json.get('password', None)
+    new_password = request.json.get('new_password', None)
+
+    if password == new_password:
+        return jsonify(msg='new password must be different than current password', data={})
+
+    user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
+
+    try:
+        if not bcrypt.checkpw(password.encode(), user.password):
+            return jsonify(msg='invalid credentials', data={}), 401
+    except KeyError:
+        return jsonify(msg='invalid credentials', data={}), 401
+
+    user.password = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt())
+
+    db.session.commit()
+
+    return jsonify(msg='successfully updated password', data={})
+
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     username = request.json.get('username', None)
