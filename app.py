@@ -38,7 +38,7 @@ def check_if_token_revoked(jwt_header, jwt_payload: dict) -> bool:
 # decorator if the route uses a verb other than that, e.g. @app.route(' /route', methods=['POST'])
 @app.route('/')
 def index():
-    return 'Homepage for Habit Tracker'
+    return jsonify(msg='Homepage for Habit Tracker', data={})
 
 @app.route('/protected')
 @jwt_required()
