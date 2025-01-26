@@ -1,6 +1,6 @@
 # cHabits
 
-# Building an API with flask and python for fun
+## Building an API with flask and python for fun
 
 To run:
     - Clone this repository
