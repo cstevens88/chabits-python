@@ -3,11 +3,10 @@ from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_jwt_extended import create_access_token, get_jwt, get_jwt_identity, jwt_required, JWTManager
-from markupsafe import escape
 import os
 from sqlalchemy import exc
 
-from models.models import Base, db, Habit, HabitTracking, TokenBlocklist, User
+from models.models import db, Habit, TokenBlocklist, User
 from util.user import get_user_by_username, get_all_users
 
 load_dotenv()
