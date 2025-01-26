@@ -2,6 +2,7 @@ import bcrypt
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+from dotenv import load_dotenv
 from flask import Flask
 from flask import jsonify
 from flask import request
@@ -12,8 +13,15 @@ from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 from flask_sqlalchemy import SQLAlchemy
 from markupsafe import escape
+import os
 from sqlalchemy import exc
 from sqlalchemy.orm import DeclarativeBase
+
+load_dotenv()
+
+SQLALCHEMY_DATABASE_URI = os.getenv('SQLITE_DATABASE_URI')
+JWT_TOKEN_EXPIRATION_HOURS = int(os.getenv('JWT_TOKEN_EXPIRATION_HOURS'))
+JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 class Base(DeclarativeBase):
     pass
@@ -22,11 +30,11 @@ db = SQLAlchemy(model_class=Base)
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chabits.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 db.init_app(app)
 
-ACCESS_EXPIRES = timedelta(hours=1)
-app.config['JWT_SECRET_KEY'] = 'test'
+ACCESS_EXPIRES = timedelta(hours=JWT_TOKEN_EXPIRATION_HOURS)
+app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = ACCESS_EXPIRES
 jwt = JWTManager(app)
 

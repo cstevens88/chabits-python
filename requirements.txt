@@ -3,4 +3,5 @@ Flask
 flask_jwt_extended
 flask_sqlalchemy
 markupsafe
+python-dotenv
 sqlalchemy
