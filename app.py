@@ -1,16 +1,8 @@
 import bcrypt
-from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
-from flask import Flask
-from flask import jsonify
-from flask import request
-from flask_jwt_extended import create_access_token
-from flask_jwt_extended import get_jwt
-from flask_jwt_extended import get_jwt_identity
-from flask_jwt_extended import jwt_required
-from flask_jwt_extended import JWTManager
+from flask import Flask, jsonify, request
+from flask_jwt_extended import create_access_token, get_jwt, get_jwt_identity, jwt_required, JWTManager
 from markupsafe import escape
 import os
 from sqlalchemy import exc
