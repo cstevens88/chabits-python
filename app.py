@@ -11,12 +11,11 @@ from flask_jwt_extended import get_jwt
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
-from flask_sqlalchemy import SQLAlchemy
 from markupsafe import escape
 import os
 from sqlalchemy import exc
-from sqlalchemy.orm import DeclarativeBase
 
+from models.models import Base, db, Habit, HabitTracking, TokenBlocklist, User
 from util.user import get_user_by_username, get_all_users
 
 load_dotenv()
@@ -24,11 +23,6 @@ load_dotenv()
 SQLALCHEMY_DATABASE_URI = os.getenv('SQLITE_DATABASE_URI')
 JWT_TOKEN_EXPIRATION_HOURS = int(os.getenv('JWT_TOKEN_EXPIRATION_HOURS'))
 JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
-
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
 
 app = Flask(__name__)
 
@@ -39,30 +33,6 @@ ACCESS_EXPIRES = timedelta(hours=JWT_TOKEN_EXPIRATION_HOURS)
 app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = ACCESS_EXPIRES
 jwt = JWTManager(app)
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
-    habits = db.relationship('Habit', backref='user', lazy=True)
-
-class Habit(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(255), nullable=True)
-    frequency = db.Column(db.String(50), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
-class HabitTracking(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, nullable=False)
-    status = db.Column(db.Boolean, nullable=False)
-    habit_id = db.Column(db.Integer, db.ForeignKey('habit.id'), nullable=False)
-
-class TokenBlocklist(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    jti = db.Column(db.String(36), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, nullable=False)
 
 with app.app_context():
     db.create_all()
@@ -153,7 +123,7 @@ def logout():
 def get_user(username):
     user = get_user_by_username(db, User, username)
     try:
-        return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username, 'password':user.password.decode()})
+        return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username})
     except AttributeError:
         return jsonify(msg='no user with that id found', data={})
     
