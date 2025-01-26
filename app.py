@@ -17,6 +17,8 @@ import os
 from sqlalchemy import exc
 from sqlalchemy.orm import DeclarativeBase
 
+from util.user import get_user_by_username, get_all_users
+
 load_dotenv()
 
 SQLALCHEMY_DATABASE_URI = os.getenv('SQLITE_DATABASE_URI')
@@ -106,8 +108,8 @@ def reset_password():
 
     if password == new_password:
         return jsonify(msg='new password must be different than current password', data={})
-
-    user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
+    
+    user = get_user_by_username(db, User, username)
 
     try:
         if not bcrypt.checkpw(password.encode(), user.password):
@@ -127,7 +129,7 @@ def login():
     password = request.json.get('password', None)
 
     try:
-        if not bcrypt.checkpw(password.encode(), get_user(username).json['data']['password'].encode()):
+        if not bcrypt.checkpw(password.encode(), get_user_by_username(db, User, username).password):
             return jsonify(msg='invalid credentials', data={}), 401
     except KeyError:
         return jsonify(msg='invalid credentials', data={}), 401
@@ -149,7 +151,7 @@ def logout():
 # users
 @app.route('/api/users/<username>') # TODO: don't need this route, but it could be useful in the future for some feature
 def get_user(username):
-    user = db.session.execute(db.select(User).where(User.username == username)).scalars().first()
+    user = get_user_by_username(db, User, username)
     try:
         return jsonify(msg='successfully got user', data={'id':user.id, 'username':user.username, 'password':user.password.decode()})
     except AttributeError:
@@ -158,9 +160,10 @@ def get_user(username):
 # TODO: i don't actually need this route, but perhaps it could be used in the future for something like an admin role
 @app.route('/api/users')
 def get_users():
-    users = db.session.execute(db.select(User).order_by(User.username)).scalars()
+    users = get_all_users(db, User)
     user_list = []
     for user in users:
+        print(user)
         user_list.append({'id': user.id, 'username': user.username}), 200
     return user_list
 
@@ -171,10 +174,11 @@ def get_habits(user_id):
     habits = db.session.execute(db.select(Habit).where(Habit.user_id == user_id)).scalars()
     habit_list = []
     for habit in habits:
+        print(habit)
         habit_list.append({'id': habit.id, 'name': habit.name, 'description': habit.description, 'frequency': habit.frequency})
     return jsonify(msg="successfully got user habits", data={"habits": habit_list}), 200
 
-@app.route('/api/habits', methods=['POST']) # TODO: Consider using '/api/habits/<user_id> for this route
+@app.route('/api/habits', methods=['POST'])
 @jwt_required()
 def create_habit():
     habit = Habit(name=request.json.get('name', None),
