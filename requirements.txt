@@ -1,5 +1,6 @@
 bcrypt
 Flask
+flask-cors
 flask_jwt_extended
 flask_sqlalchemy
 markupsafe

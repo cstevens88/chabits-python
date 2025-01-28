@@ -1,4 +1,5 @@
 import bcrypt
+from flask_cors import CORS
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from flask import Flask, jsonify, request
@@ -16,6 +17,7 @@ JWT_TOKEN_EXPIRATION_HOURS = int(os.getenv('JWT_TOKEN_EXPIRATION_HOURS'))
 JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 app = Flask(__name__)
+CORS(app, resources={'/*': {'origins': 'http://localhost:3000'}})
 
 app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 db.init_app(app)
